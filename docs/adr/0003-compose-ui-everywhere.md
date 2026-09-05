@@ -1,0 +1,3 @@
+# All UI is Compose Multiplatform in shared code; Swift is a bridge, not a screen
+
+Every screen, including the Alarm Trigger screen, is written once in Compose in the shared modules. The `iosApp` Swift target only hosts the Compose view controller and bridges Swift-only system APIs (AlarmKit, audio session, bundled ringtones) behind Kotlin `expect`/`actual` contracts. We accept some non-native feel on iOS in exchange for one implementation of the design and one place to test behaviour. Where an iOS system API insists on drawing its own UI (e.g. AlarmKit's lock-screen alert), that UI is configured from Kotlin data, not hand-built in SwiftUI.
