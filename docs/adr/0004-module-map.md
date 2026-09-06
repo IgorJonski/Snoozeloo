@@ -12,9 +12,9 @@ Decided in [Module map: core/component/feature boundaries and navigation graph (
 
 | Module | Holds |
 | --- | --- |
-| `:shared` (KMP, the `:app` role) | `commonMain`: `App()` — root `NavHost` on `RootRoute`; `TriggerApp()` — `NavHost` on `TriggerRoute`; `appModules`; `initApp(config)`; the `kotlin.time.Clock` binding (`Clock.System`). `iosMain`: `MainViewController(bridge: AlarmKitBridge)` which calls `initApp { modules(iosHostModule) }`. Exports the static framework `Shared` with `export(project(":component:alarm-scheduling:data"))` so `AlarmKitBridge` is visible in Swift under its own name. |
+| `:shared` (KMP, the `:app` role) | `commonMain`: `App()` — root `NavHost` on `RootRoute`; `TriggerApp()` — `NavHost` on `TriggerRoute`; `appModules`; `initApp(config)`; the `kotlin.time.Clock` binding (`Clock.System`). `iosMain`: `startApp(bridge: AlarmKitBridge): AlarmKitEvents` which calls `initApp { modules(iosHostModule) }` and returns the Kotlin entry point for AlarmKit intents, plus a no-argument `MainViewController()` whose root draws `TriggerApp()` over `App()` while an Alarm is ringing (ADR-0007; was `MainViewController(bridge:)`). Exports the static framework `Shared` with `export(project(":component:alarm-scheduling:data"))` so `AlarmKitBridge` is visible in Swift under its own name. |
 | `:androidApp` (Android application) | `SnoozelooApplication` → `initApp { androidContext(this); modules(androidHostModule) }` binding `TriggerIntentFactory`; `MainActivity` → `App()`; `AlarmTriggerActivity` → `TriggerApp()`; the manifest permissions from `docs/research/android-exact-alarms.md`; SplashScreen API theme. |
-| `iosApp` (Xcode) | `iOSApp.swift`; `AlarmKitBridgeImpl.swift` — a thin implementation with no mapping logic; the `SnoozelooAlarmWidget` extension target (the Live Activity AlarmKit requires for the snooze countdown); LaunchScreen; Info.plist keys. |
+| `iosApp` (Xcode) | `iOSApp.swift` (calls `startApp` in `init`, subscribes to `alarmUpdates`); `AlarmKitBridgeImpl.swift` — a thin implementation with no mapping logic; `AlarmIntents.swift` — the two `LiveActivityIntent`s (ADR-0007); the `SnoozelooAlarmWidget` extension target (the Live Activity AlarmKit requires for the snooze countdown); LaunchScreen; Info.plist keys. |
 
 The template names `:shared` and `:androidApp` are kept on purpose; `:shared` is the assembly module the `kmp-module-structure` skill calls `:app`.
 
@@ -26,8 +26,8 @@ The template names `:shared` and `:androidApp` are kept on purpose; `:shared` is
 | `:core:usecase:domain` | `UseCase`, `asResult` | `:core:error-reporting:domain` (`api`) |
 | `:core:navigation:domain` | `RootRoute`, `TriggerRoute` | — |
 | `:core:ringtone:domain` | `RingtoneId`, `Ringtone`, the catalog and player contracts (shape: #13) | — |
-| `:core:alarm:domain` | `Alarm`, `AlarmId`, `AlarmTime`, `RepeatDays`, `Volume`, `AlarmRepository` | `:core:ringtone:domain` (`api`) |
-| `:core:alarm-scheduling:domain` | `Occurrence`, next-Occurrence logic, `AlarmScheduler` (shape: #10; a `TimeZoneProvider` lands here if #10 needs one) | `:core:alarm:domain` (`api`) |
+| `:core:alarm:domain` | `Alarm`, `AlarmId` (a `kotlin.uuid.Uuid`, ADR-0007), `AlarmTime`, `RepeatDays`, `Volume`, `AlarmRepository` | `:core:ringtone:domain` (`api`) |
+| `:core:alarm-scheduling:domain` | `Occurrence`, next-Occurrence logic, `AlarmScheduler` (shape: #10; a `TimeZoneProvider` lands here if #10 needs one); `AlarmRinger` (ADR-0006); `AlarmCapabilities` `expect`/`actual` (ADR-0007) | `:core:alarm:domain` (`api`) |
 | `:core:permissions:domain` | the alarm-permissions contract (shape: #22) | — |
 
 There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, so it is injected directly.
@@ -41,7 +41,7 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 | `:component:design-system:presentation` | theme, colours, Montserrat fonts, icons, shared composables (#14) | — |
 | `:component:database:data` | Room database, entities, DAOs (#15) | — |
 | `:component:alarm:data` | `DefaultAlarmRepository` over the DAO | `:core:alarm:domain`, `:component:database:data` |
-| `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `RescheduleReceiver` (ADR-0006; was `BootReceiver`), notification channels, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract, the `AlarmRinger` implementation (ADR-0006). `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls) and `AlarmKitAlarmScheduler`, which maps the domain model onto the bridge. | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |
+| `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `RescheduleReceiver` (ADR-0006; was `BootReceiver`), notification channels, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract, the `AlarmRinger` implementation (ADR-0006). `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls), the `AlarmKitEvents` interface and its implementation, `AlarmKitAlarmScheduler` (maps the domain model onto the bridge), `AlarmKitRinger`, and the `didBecomeActive` observer that runs `syncAll()` (ADR-0007). | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |
 | `:component:ringtone:data` | Android: `RingtoneManager` catalog and player. iOS: bundled catalog and `AVAudioPlayer` (ObjC-callable, no bridge). Bundled sound files live in this module's `composeResources`. | `:core:ringtone:domain` |
 | `:component:permissions:data` | Android: exact-alarm, full-screen-intent and notification checks. iOS: AlarmKit authorization delegated to `AlarmKitBridge`. | `:core:permissions:domain`; on iOS also `:component:alarm-scheduling:data` |
 
@@ -71,7 +71,7 @@ sealed interface TriggerRoute {
 ```
 
 - `alarmsGraph(navController)`: Alarm List → `AlarmSettings(id)` from a card, `AlarmSettings(null)` from the FAB; Alarm Settings → `RingtoneSetting(currentId)`; Ringtone Setting pops and returns `selectedRingtoneId` through `previousBackStackEntry.savedStateHandle`. The name dialog is screen state, not a route.
-- `triggerGraph(onFinished)`: one destination, no controller; leaving the screen is a callback the host answers (`AlarmTriggerActivity.finish()` on Android; iOS per #12).
+- `triggerGraph(onFinished)`: one destination, no controller; leaving the screen is a callback the host answers (`AlarmTriggerActivity.finish()` on Android; a no-op on iOS, where the overlay follows `AlarmRinger.ringing` — ADR-0007).
 - Two route families because the Trigger never navigates to the list and vice versa; a shared family would only invite a stray `navigate(Trigger)`.
 
 ## Gradle
@@ -83,7 +83,7 @@ An included build `build-logic` carries three convention plugins — `snoozeloo.
 - One `:feature:alarms` holding the Trigger too — rejected: different entry path and lifecycle; the split costs one extra graph.
 - `Alarm` and `AlarmRepository` in the feature, Trigger fed a DTO — rejected: two features share the model, which is the skill's definition of `core`.
 - Swift implementing `AlarmScheduler` directly — rejected: the domain-to-AlarmKit mapping would live in untestable Swift; a primitive bridge keeps Swift to a few dozen lines.
-- A mutable `platformModule` set from Swift — rejected in favour of `initApp`'s config hook, which the `kmp-di-koin` skill prescribes for host bindings.
+- A mutable `platformModule` set from Swift — rejected in favour of `initApp`'s config hook, which the `kmp-di-koin` skill prescribes for host bindings. ADR-0007 moved the call from `MainViewController` to `startApp`, because AlarmKit intents launch the process with no view controller.
 - Ringtone selection returned via a feature-scoped draft store — rejected: global state that must be cleared; the Settings ViewModel survives on the back stack, so only one id needs to travel back.
 
 ## Consequences
