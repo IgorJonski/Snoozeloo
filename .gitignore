@@ -40,3 +40,6 @@ iosApp/Pods/
 # Logs & leftovers
 *.log
 *.orig
+
+# Claude Code agent worktrees
+.claude/worktrees/
