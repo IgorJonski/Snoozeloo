@@ -17,23 +17,27 @@ The set of weekdays (Mo–Su) an Alarm rings on. An Alarm with no Repeat Days is
 _Avoid_: Schedule, recurrence, weekdays
 
 **One-shot Alarm**:
-An Alarm with no Repeat Days; it rings once, at the next Occurrence of its Alarm Time.
+An Alarm with no Repeat Days; it rings once, at the next Occurrence of its Alarm Time (today if still ahead, otherwise tomorrow), and becomes Disabled after Turn Off.
 _Avoid_: Single alarm, non-repeating alarm
 
 **Occurrence**:
-A concrete date-time at which an Alarm rings. The **Next Occurrence** is the soonest future one, shown as a countdown ("1d 4h 45min").
+A concrete date-time at which an Alarm rings, either a **Regular Occurrence** (from Alarm Time and Repeat Days) or a Snoozed Occurrence. An Alarm has at most one pending Occurrence of each kind. The **Next Occurrence** is the soonest future one, shown as a countdown ("1d 4h 45min").
 _Avoid_: Instance, firing, trigger
+
+**Snoozed Occurrence**:
+The one-time Occurrence created by a Snooze, exactly five minutes after the Snooze. It survives changes to the Alarm's Name, Ringtone, Volume and Vibrate, and is dropped when Alarm Time, Repeat Days or Enabled change or the Alarm is deleted.
+_Avoid_: Snooze alarm, pending snooze, countdown
 
 **Trigger**:
 The moment an Occurrence arrives and the Alarm starts ringing; also the full-screen Alarm Trigger screen shown then.
 _Avoid_: Fire, go off, ring (as a noun)
 
 **Turn Off**:
-Stopping a ringing Alarm from the Trigger screen; ends this Occurrence.
-_Avoid_: Dismiss, stop, cancel
+Stopping a ringing Alarm from the Trigger screen; ends this Occurrence. Five minutes of unanswered ringing, or a newer Occurrence taking over the Trigger, count as Turn Off.
+_Avoid_: Dismiss, stop, cancel, missed
 
 **Snooze**:
-Stopping a ringing Alarm and scheduling a one-time Occurrence 5 minutes later with the same settings, without changing the Alarm's Repeat Days schedule.
+Stopping a ringing Alarm and scheduling a Snoozed Occurrence 5 minutes later with the same settings, without changing the Alarm's Repeat Days schedule. Unlimited per Occurrence.
 _Avoid_: Postpone, delay, remind later
 
 **Enabled / Disabled**:
