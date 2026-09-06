@@ -41,7 +41,7 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 | `:component:design-system:presentation` | theme, colours, Montserrat fonts, icons, shared composables (#14) | — |
 | `:component:database:data` | Room database, entities, DAOs (#15) | — |
 | `:component:alarm:data` | `DefaultAlarmRepository` over the DAO | `:core:alarm:domain`, `:component:database:data` |
-| `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `BootReceiver`, notification channel, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract. `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls) and `AlarmKitAlarmScheduler`, which maps the domain model onto the bridge. | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |
+| `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `RescheduleReceiver` (ADR-0006; was `BootReceiver`), notification channels, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract, the `AlarmRinger` implementation (ADR-0006). `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls) and `AlarmKitAlarmScheduler`, which maps the domain model onto the bridge. | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |
 | `:component:ringtone:data` | Android: `RingtoneManager` catalog and player. iOS: bundled catalog and `AVAudioPlayer` (ObjC-callable, no bridge). Bundled sound files live in this module's `composeResources`. | `:core:ringtone:domain` |
 | `:component:permissions:data` | Android: exact-alarm, full-screen-intent and notification checks. iOS: AlarmKit authorization delegated to `AlarmKitBridge`. | `:core:permissions:domain`; on iOS also `:component:alarm-scheduling:data` |
 
@@ -51,8 +51,8 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 | --- | --- | --- |
 | `:feature:alarms:domain` | `ObserveAlarms`, `SaveAlarm`, `DeleteAlarm`, `RestoreAlarm` (undo), `SetAlarmEnabled` | `:core:alarm:domain`, `:core:alarm-scheduling:domain`, `:core:ringtone:domain`, `:core:usecase:domain` |
 | `:feature:alarms:presentation` | Alarm List, Alarm Settings (with the name dialog), Ringtone Setting, their ViewModels, `alarmsGraph` | `:feature:alarms:domain`, `:core:navigation:domain`, `:core:permissions:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
-| `:feature:trigger:domain` | `TurnOffAlarm`, `SnoozeAlarm` | `:core:alarm:domain`, `:core:alarm-scheduling:domain`, `:core:ringtone:domain`, `:core:usecase:domain` |
-| `:feature:trigger:presentation` | Trigger screen, ViewModel, `triggerGraph` | `:feature:trigger:domain`, `:core:navigation:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
+| `:feature:trigger:domain` | ~~`TurnOffAlarm`, `SnoozeAlarm`~~ — superseded by ADR-0006: the use cases live in `:component:alarm-scheduling:domain`; this module is never created | — |
+| `:feature:trigger:presentation` | Trigger screen, ViewModel, `triggerGraph` | `:component:alarm-scheduling:domain` (ADR-0006; was `:feature:trigger:domain`), `:core:navigation:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
 
 Group rules are the `kmp-module-structure` ones: `core → core`, `component → core + component`, `feature → core + component`, hosts → everything. Test fixtures are not shared in a module; Mokkery mocks the interfaces.
 
