@@ -29,7 +29,7 @@ The one-time Occurrence created by a Snooze, exactly five minutes after the Snoo
 _Avoid_: Snooze alarm, pending snooze, countdown
 
 **Trigger**:
-The moment an Occurrence arrives and the Alarm starts ringing; also the full-screen Alarm Trigger screen shown then.
+The moment an Occurrence arrives and the Alarm starts ringing; also the surface shown then, on which the user can Turn Off or Snooze (the app's full-screen Alarm Trigger screen, or the system's own alarm alert where the platform owns it).
 _Avoid_: Fire, go off, ring (as a noun)
 
 **Turn Off**:
