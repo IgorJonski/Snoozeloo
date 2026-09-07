@@ -150,3 +150,6 @@ They are for eyeballing, not pixel diffing.
   `notification-ringing` strokes plain black.
 - The Save button in the Extended settings frame `62:4336` is enabled (`#4664FF`) while
   the same frame at `62:4191` (empty `00:00`) shows it disabled (`#E6E6E6`).
+- The list frame shows "Alarm in 6h 30min" on the Disabled "Dinner" card although nothing
+  is scheduled for a Disabled Alarm; the Alarm List spec (`docs/specs/alarm-list.md`)
+  hides the countdown on Disabled cards.

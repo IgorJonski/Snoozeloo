@@ -147,6 +147,7 @@ repo (ADR-0009).
 | `outline/notification-silent` | `notifications_off`, FILL 0 | `ic_bell_off.xml` | 18 |
 | `outline/notification-ringing` | `notifications_active`, FILL 0 | `ic_bell_ringing.xml` | 18 |
 | `checkmark-circle` glyph | `check` | `ic_check.xml` | 14.4 inside an 18 dp `primary` circle |
+| — (swipe-to-delete, absent from Figma) | `delete`, FILL 1 | `ic_delete.xml` | 24 on the `errorContainer` swipe background (`docs/specs/alarm-list.md`) |
 
 The squares behind close/back and the circles behind the check and the ringtone bells
 are component backgrounds, not part of the icon. The colon between time fields is
