@@ -90,22 +90,28 @@ Only two weights occur: **Medium (500)** and **SemiBold (600)**. Line height is 
 
 ## Icons
 
-All icons are "Huge-icon" instances (Hugeicons). Files are the exact SVG exported by
-Figma with only the wrapper attributes stripped; fills are baked in and match the screen
-they were taken from, so tint at runtime where a second colour is needed.
+All icons in the file are "Huge-icon" instances (Hugeicons). The `solid` and `bulk`
+styles used here are **Hugeicons Pro**, so their SVG exports are not kept in this public
+repository; the app ships Material Symbols instead (ADR-0009,
+[`design-system.md`](./design-system.md)). The table records what the file shows so the
+Material replacements can be matched by size and role.
 
-| File | Figma component | Frame size | Glyph box | Baked colour | Used on |
-| --- | --- | --- | --- | --- | --- |
-| `icons/alarm.svg` | `Huge-icon/interface/solid/alarm` | 62 | 55.54 (inset 5.21 %) | `#4664FF` | Empty state, Trigger; tint white for splash |
-| `splash/alarm-white.svg` | same glyph at splash size | 82 | 73.46 | white | Splash |
-| `icons/plus.svg` | `Huge-icon/interface/solid/plus` | 38 | 21.375 (inset 21.88 %) | white | FAB |
-| `icons/close.svg` | `Huge-icon/interface/solid/remove-rectangle` | 32 | 32 | square `#E6E6E6`, cross white | Settings top bar (close / discard) |
-| `icons/back.svg` | `Huge-icon/arrows/bulk/arrow-left-rectangle` | 32 | 32 | square `#4664FF`, arrow `#F6F6F6` | Ringtone Setting top bar |
-| `icons/notification-silent.svg` | `Huge-icon/interface/outline/notification-silent` | 18 | 18 | stroke `#28303F` | Silent row |
-| `icons/notification-ringing.svg` | `Huge-icon/interface/outline/notification-ringing` | 18 | 18 | stroke black | Every non-silent ringtone row |
-| `icons/check.svg` | `Interface, Essential/checkmark-circle-1` (glyph only) | 14.4 in an 18 circle | 23.05 (overflows 30 %) | stroke white 1.44 | Selected ringtone |
-| `icons/colon.svg` | vector `:` | 4 × 13.34 | — | `#858585` | Between hour and minute fields (same grey even when digits are blue) |
-| `icons/slider-thumb.svg` | `Ellipse 1174` | 16 | — | `#4664FF` | Volume slider thumb (a plain circle; a drawn shape is enough) |
+| Figma component | Frame size | Glyph box | Colour in the file | Used on |
+| --- | --- | --- | --- | --- |
+| `Huge-icon/interface/solid/alarm` | 62 | 55.54 (inset 5.21 %) | `#4664FF` | Empty state, Trigger; white at 82 × 82 (glyph 73.46) on the splash |
+| `Huge-icon/interface/solid/plus` | 38 | 21.375 (inset 21.88 %) | white | FAB |
+| `Huge-icon/interface/solid/remove-rectangle` | 32 | 32 | square `#E6E6E6`, cross white | Settings top bar (close / discard) |
+| `Huge-icon/arrows/bulk/arrow-left-rectangle` | 32 | 32 | square `#4664FF`, arrow `#F6F6F6` | Ringtone Setting top bar |
+| `Huge-icon/interface/outline/notification-silent` | 18 | 18 | stroke `#28303F` | Silent row |
+| `Huge-icon/interface/outline/notification-ringing` | 18 | 18 | stroke black | Every non-silent ringtone row |
+| `Interface, Essential/checkmark-circle-1` (glyph only) | 14.4 in an 18 circle | 23.05 (overflows 30 %) | stroke white 1.44 | Selected ringtone |
+
+Two plain vectors that are not Hugeicons are kept as exported:
+
+| File | Size | Colour | Used on |
+| --- | --- | --- | --- |
+| `icons/colon.svg` | 4 × 13.34 | `#858585` | Between hour and minute fields (same grey even when digits are blue) |
+| `icons/slider-thumb.svg` | 16 circle | `#4664FF` | Volume slider thumb (a drawn circle is enough) |
 
 Not exported on purpose: status-bar wifi/signal/battery and the Android keyboard
 mock-ups (system UI), and the toggle knob (a plain rounded rectangle).
@@ -122,16 +128,16 @@ preferred later.
 ## Reference renders
 
 `screens/alarm-list.png` and `screens/alarm-settings.png` are Figma exports at 1× of the
-Extended list and settings frames; `splash/splash-360x800.png` is the splash frame.
+Extended list and settings frames; `splash/splash-360x800.png` is the splash frame
+(the only record of the splash bell, the Pro SVG was not kept).
 They are for eyeballing, not pixel diffing.
 
 ## Licensing notes
 
 - Montserrat: OFL 1.1, bundling in the app is fine; keep `OFL.txt` next to the fonts.
 - Hugeicons: the glyphs in the Figma file are **Pro** styles (`solid`, `bulk`); only
-  the Stroke Rounded set is free (MIT). The SVGs in `icons/` and `splash/` are therefore
-  a reference archive only and are **never copied into a source set**; the app ships
-  Material Symbols instead. Decided in
+  the Stroke Rounded set is free (MIT). Their SVG exports were removed from the repo and
+  must not be re-added; the app ships Material Symbols instead. Decided in
   [ADR-0009](../adr/0009-design-system.md); see
   [`design-system.md`](./design-system.md) for the glyph-by-glyph mapping.
 

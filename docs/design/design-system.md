@@ -135,7 +135,8 @@ list).
 
 Google **Material Symbols** (Apache-2.0), exported as Android XML vector drawables into
 `composeResources/drawable/`, drawn white (`#FFFFFF`) and tinted at the use site. The
-Hugeicons glyphs in the Figma file are Pro styles and are not shipped (ADR-0009).
+Hugeicons glyphs in the Figma file are Pro styles; their exports were removed from the
+repo (ADR-0009).
 
 | Figma glyph | Material Symbol | File | Size at use |
 | --- | --- | --- | --- |
@@ -149,7 +150,7 @@ Hugeicons glyphs in the Figma file are Pro styles and are not shipped (ADR-0009)
 
 The squares behind close/back and the circles behind the check and the ringtone bells
 are component backgrounds, not part of the icon. The colon between time fields is
-text, not an icon. `docs/design/icons/` stays as a reference archive only.
+text, not an icon (`docs/design/icons/colon.svg` shows it).
 
 ## Splash
 
