@@ -26,7 +26,7 @@ The template names `:shared` and `:androidApp` are kept on purpose; `:shared` is
 | `:core:usecase:domain` | `UseCase`, `asResult` | `:core:error-reporting:domain` (`api`) |
 | `:core:navigation:domain` | `RootRoute`, `TriggerRoute` | — |
 | `:core:ringtone:domain` | `RingtoneId`, `Ringtone`, `RingtoneCatalog`, `RingtonePreviewPlayer` (ADR-0008) | — |
-| `:core:alarm:domain` | `Alarm`, `AlarmId` (a `kotlin.uuid.Uuid`, ADR-0007), `AlarmTime`, `RepeatDays`, `Volume`, `AlarmRepository` | `:core:ringtone:domain` (`api`) |
+| `:core:alarm:domain` | `Alarm` (with `snoozedUntil` — ADR-0005 — and `createdAt` — ADR-0010), `AlarmId` (a `kotlin.uuid.Uuid`, ADR-0007), `AlarmTime`, `RepeatDays`, `Volume`, `AlarmRepository` (`observeAll`/`observe`/`getAll`/`get`/`upsert`/`setEnabled`/`setSnoozedUntil`/`delete`, ADR-0010) | `:core:ringtone:domain` (`api`) |
 | `:core:alarm-scheduling:domain` | `Occurrence`, next-Occurrence logic, `AlarmScheduler` (shape: #10; a `TimeZoneProvider` lands here if #10 needs one); `AlarmRinger` (ADR-0006); `AlarmCapabilities` `expect`/`actual` (ADR-0007) | `:core:alarm:domain` (`api`) |
 | `:core:permissions:domain` | the alarm-permissions contract (shape: #22) | — |
 
@@ -39,8 +39,8 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 | `:component:error-reporting:data` | `LoggingErrorReporter` (Kermit) | `:core:error-reporting:domain` |
 | `:component:ui-lifecycle:presentation` | `ObserveAsEvents`, one-argument `dropUnlessResumed` | — |
 | `:component:design-system:presentation` | `SnoozelooTheme` (one light scheme), Montserrat fonts, Material Symbols `ic_*` vectors, shared composables (ADR-0009) | — |
-| `:component:database:data` | Room database, entities, DAOs (#15) | — |
-| `:component:alarm:data` | `DefaultAlarmRepository` over the DAO | `:core:alarm:domain`, `:component:database:data` |
+| `:component:database:data` | `SnoozelooDatabase` (one table, `alarms`), `AlarmEntity`, `AlarmDao`, `expect fun databaseBuilder()` with its Android/iOS `actual`s, `databaseModule`, exported `schemas/` (ADR-0010) | — |
+| `:component:alarm:data` | `DefaultAlarmRepository` over the DAO, `AlarmMapper.kt`, `alarmDataModule` (ADR-0010) | `:core:alarm:domain`, `:component:database:data` |
 | `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `RescheduleReceiver` (ADR-0006; was `BootReceiver`), notification channels, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract, the `AlarmRinger` implementation (ADR-0006). `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls), the `AlarmKitEvents` interface and its implementation, `AlarmKitAlarmScheduler` (maps the domain model onto the bridge), `AlarmKitRinger`, and the `didBecomeActive` observer that runs `syncAll()` (ADR-0007). | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |
 | `:component:ringtone:data` | Android: `RingtoneManager` catalog, preview player and the Android-only `AlarmSoundPlayer` contract with its implementation. iOS: bundled catalog, `AVAudioPlayer` preview (ObjC-callable, no bridge) and the `Library/Sounds` copy step. Bundled sound files live in this module's `iosMain/composeResources` (ADR-0008). | `:core:ringtone:domain` |
 | `:component:permissions:data` | Android: exact-alarm, full-screen-intent and notification checks. iOS: AlarmKit authorization delegated to `AlarmKitBridge`. | `:core:permissions:domain`; on iOS also `:component:alarm-scheduling:data` |
