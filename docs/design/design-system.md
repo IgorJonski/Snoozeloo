@@ -109,21 +109,23 @@ Material name; bare names where Material has no counterpart.
 
 | Composable | Spec |
 | --- | --- |
-| `SnoozelooCard(modifier, content)` | `surface`, shape `medium`, padding 16, no elevation |
+| `SnoozelooCard(modifier, contentPadding = 16.dp, content)` | `surface`, shape `medium`, padding 16 (24 for the Alarm Settings time card), no elevation |
 | `SnoozelooSwitch(checked, onCheckedChange, size: SwitchSize, modifier)` | custom-drawn (Material `Switch` is fixed at 52 × 32). `SwitchSize.Card`: track 51 × 30, padding 2, knob 26, shadow `0 3 7 rgba(0,0,0,.12)`. `SwitchSize.Row`: track 41 × 24, padding 2, knob 20, shadow `0 2.4 5.6 rgba(0,0,0,.12)`. Track `primary` on / `inversePrimary` off, knob `surface`. Knob offset animated and read in `offset { }`; `Modifier.toggleable(role = Role.Switch)` plus `minimumInteractiveComponentSize()` |
 | `DayChip(label, selected, onClick, modifier)` | 38 × 26 pill, `labelMedium`; selected `primary`/`onPrimary`, unselected `primaryContainer`/`onSurface`; a plain `Box` with `selectable(role = Role.Checkbox)`, not `FilterChip` (its 32 dp minimum height and paddings miss Figma) |
 | `PrimaryButton(text, onClick, enabled, modifier)` | `Button` with shape `large`, padding 16 h / 6 v (Save) or 32 h / 8 v (Turn off, via a `contentPadding` parameter); disabled = `surfaceContainerHighest` container with `onPrimary` label (not Material's 12 % alpha) |
-| `SecondaryButton(text, onClick, modifier)` | `primaryContainer` background, 1 dp `primary` border, `primary` text, same shape and paddings as the large `PrimaryButton` (Snooze) |
+| `SecondaryButton(text, onClick, modifier, contentPadding)` | `primaryContainer` background, 1 dp `primary` border, `primary` text, same shape and the same two paddings as `PrimaryButton` (large for Snooze, small for the Cancel in the delete confirmation) |
 | `SquareIconButton(icon, contentDescription, onClick, containerColor, contentColor, modifier)` | 32 dp rounded square; close = `surfaceContainerHighest` / `onPrimary`, back = `primary` / `surfaceVariant`; corner radius taken from `screens/alarm-settings.png` when built |
 | `SettingRow(label, onClick?, modifier, trailing)` | height 52, padding 16, `space-between`; label `titleMedium` `onSurface`; trailing slot (a `bodyMedium` `onSurfaceVariant` value or a `SnoozelooSwitch(Row)`) |
 | `VolumeSlider(value, onValueChange, modifier)` | Material `Slider` with a 6 dp track (`primary` active, `primaryContainer` inactive, shape `CircleShape`) and a 16 dp `primary` circle thumb via the `thumb`/`track` slots; 20 dp tall hit area |
 | `TimeDigitField(value, onValueChange, modifier)` | 128 × 95, `surfaceVariant`, shape `medium`, `displayMedium` centred; placeholder `00` in `onSurfaceVariant`, entered digits `primary`; numeric keyboard, two characters; all validation in the ViewModel (#17) |
 | `SnoozelooTextField(value, onValueChange, modifier)` | `BasicTextField`, `bodyMedium` `onSurface`, padding 12 h / 10 v, shape `extraSmall`, 1 dp `outlineVariant` border, `surface` background |
-| `SnoozelooDialog(onDismiss, content)` | a full-screen `Box` drawn inside the screen (the name dialog is screen state, ADR-0004, not a route or a platform `Dialog`): `scrim.copy(alpha = 0.9f)` fill, card 328 wide at y = 223, `surface`, shape `medium`, padding 16 |
+| `SnoozelooDialog(onDismiss, content)` | a full-screen `Box` drawn inside the screen (the name dialog is screen state, ADR-0004, not a route or a platform `Dialog`; the delete confirmation in Alarm Settings reuses it): `scrim.copy(alpha = 0.9f)` fill, card 328 wide at y = 223, `surface`, shape `medium`, padding 16 |
 | `Fab(onClick, contentDescription, modifier)` | `FloatingActionButton` 60 dp, `CircleShape`, `primary`, elevation 4 dp (the list frame's shadow wins over the empty-state frame), `ic_plus` at 38 dp |
 
-Feature-owned (not here): `AlarmCard`, `EmptyState`, `RepeatDaysRow`, `RingtoneRow`,
-the Trigger screen layout. Design-system components take `contentDescription` /
+Feature-owned (not here): `AlarmCard`, `EmptyState`, `RepeatDaysRow` (display-only on the
+list, clickable in Alarm Settings; owns the seven day labels), `RingtoneRow`, the Trigger
+screen layout. The "Delete alarm" action in Alarm Settings is a plain Material `TextButton`
+in `error`; no design-system component is needed for it. Design-system components take `contentDescription` /
 `text` as parameters and own no string resources; the screen that resolves a string
 owns it (`kmp-compose-ui` resource naming).
 
