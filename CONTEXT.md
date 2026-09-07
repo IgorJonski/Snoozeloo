@@ -61,5 +61,5 @@ The loudness of the Ringtone when the Alarm Triggers, 0–100%, default 50%.
 _Avoid_: Level, loudness
 
 **Bedtime Hint**:
-The text "Go to bed at XX:YY to get 8h of sleep" on an alarm card, computed as Alarm Time minus 8 hours.
+The text "Go to bed at XX:YY to get 8h of sleep" on an alarm card, computed as Alarm Time minus 8 hours. Shown only for Alarm Times from 04:00 to 12:00 inclusive, whether the Alarm is Enabled or Disabled.
 _Avoid_: Sleep reminder, bedtime suggestion
