@@ -49,8 +49,8 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 
 | Module | Holds | Depends on |
 | --- | --- | --- |
-| `:feature:alarms:domain` | `ObserveAlarms`, `GetAlarm`, `GetRingtone`, `CreateAlarm`, `UpdateAlarm` (`docs/specs/alarm-settings.md`; was one `SaveAlarm`), `DeleteAlarm`, `RestoreAlarm` (undo), `SetAlarmEnabled` | `:core:alarm:domain`, `:core:alarm-scheduling:domain`, `:core:ringtone:domain`, `:core:usecase:domain` |
-| `:feature:alarms:presentation` | Alarm List, Alarm Settings (with the name dialog), Ringtone Setting, their ViewModels, `alarmsGraph` | `:feature:alarms:domain`, `:core:navigation:domain`, `:core:permissions:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
+| `:feature:alarms:domain` | `ObserveAlarms`, `GetAlarm`, `GetRingtone`, `CreateAlarm`, `UpdateAlarm` (`docs/specs/alarm-settings.md`; was one `SaveAlarm`), `DeleteAlarm`, `RestoreAlarm` (undo), `SetAlarmEnabled`, `GetRingtones`, `PlayRingtonePreview`, `StopRingtonePreview` (`docs/specs/ringtone-setting.md`) | `:core:alarm:domain`, `:core:alarm-scheduling:domain`, `:core:ringtone:domain`, `:core:usecase:domain` |
+| `:feature:alarms:presentation` | Alarm List, Alarm Settings (with the name dialog), Ringtone Setting (with `RingtoneRow`, `PlayingIndicator` and the shared `RingtoneName` → string mapping), their ViewModels, `alarmsGraph` | `:feature:alarms:domain`, `:core:navigation:domain`, `:core:permissions:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
 | `:feature:trigger:domain` | ~~`TurnOffAlarm`, `SnoozeAlarm`~~ — superseded by ADR-0006: the use cases live in `:component:alarm-scheduling:domain`; this module is never created | — |
 | `:feature:trigger:presentation` | Trigger screen, ViewModel, `triggerGraph` | `:component:alarm-scheduling:domain` (ADR-0006; was `:feature:trigger:domain`), `:core:navigation:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
 
