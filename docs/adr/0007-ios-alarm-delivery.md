@@ -97,7 +97,7 @@ Authorization: the scheduler never prompts. A `sync` without authorization fails
 | Ringing timeout | five minutes, treated as Turn Off, `missed_alarms` notification | system-owned alert duration; no app timeout, no missed notification; a stopped One-shot is caught by `syncAll()` |
 | Take-over by a newer Occurrence | service switches, `onNewIntent` | AlarmKit decides; `ringing` follows whatever it reports `.alerting` |
 | Volume / Vibrate | applied by the service | no effect; both rows hidden in Alarm Settings via `AlarmCapabilities` |
-| Silent Ringtone | no sound, vibration if enabled | bundled near-silent `.caf`; haptics as the system decides |
+| Silent Ringtone | no sound, vibration if enabled | bundled near-silent `.wav` (ADR-0008); haptics as the system decides |
 | Repair trigger | `RescheduleReceiver` + app start | `didBecomeActive` only |
 | Hardware needed to verify | no | yes (simulator alerts unreliable) |
 
@@ -128,6 +128,6 @@ Authorization: the scheduler never prompts. A `sync` without authorization fails
 - On iOS a presentation edit during a snooze applies from the next Occurrence; the Alarm List still shows the correct countdown because `snoozedUntil` is recorded by `SnoozeAlarmIntent`.
 - The five-minute ringing timeout, the `missed_alarms` notification and the take-over rule are Android-only. The Trigger ViewModel (#19) needs nothing beyond "close when `ringing` is no longer mine".
 - `AlarmId` as `Uuid` is a constraint on #15 (text primary key, generated in the domain, not by Room).
-- #13 supplies `soundName` per Ringtone and the near-silent `.caf` for Silent; AlarmKit reads only the main bundle root or `Library/Sounds`, so #13's copy step stands.
+- ADR-0008 supplies `soundName` per Ringtone (`Silent → "silent.wav"`, `Default → null`, bundled file otherwise) and copies the bundled `.wav` files into `Library/Sounds` on every `startApp`, because AlarmKit reads only the main bundle root or `Library/Sounds`.
 - #17 hides Volume and Vibrate behind `AlarmCapabilities`. #22 owns the authorization moment and the `.denied` state. #20 gets the hardware-verification step from the device-setup task ticket.
-- **Must be verified on a physical iPhone (iOS 26.1+) before the iOS delivery is considered done**: the alert fires from the Lock Screen and while unlocked; Snooze starts the countdown and the Live Activity renders; both intents reach `AlarmKitEvents` with the app killed; `schedule` under an existing id from inside `StopAlarmIntent` does not disturb a repeating alarm; a near-silent `.caf` is accepted as a sound and a custom `.caf` loops for the whole alert; `alarmUpdates` reports `.alerting` while the app is in the foreground so the overlay appears.
+- **Must be verified on a physical iPhone (iOS 26.1+) before the iOS delivery is considered done**: the alert fires from the Lock Screen and while unlocked; Snooze starts the countdown and the Live Activity renders; both intents reach `AlarmKitEvents` with the app killed; `schedule` under an existing id from inside `StopAlarmIntent` does not disturb a repeating alarm; a near-silent `.wav` is accepted as a sound, a custom `.wav` loops for the whole alert (or at least plays to its end) and `.default` is audible as an alarm; `alarmUpdates` reports `.alerting` while the app is in the foreground so the overlay appears.

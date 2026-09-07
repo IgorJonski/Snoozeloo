@@ -45,8 +45,16 @@ Whether an Alarm is scheduled to ring. Toggled from the alarm card. A Disabled A
 _Avoid_: Active/inactive, on/off (in code), armed
 
 **Ringtone**:
-The sound an Alarm plays when it Triggers. **Silent** is a Ringtone that plays no sound.
+The sound an Alarm plays when it Triggers, chosen from the platform's catalog. **Silent** is a Ringtone that plays no sound.
 _Avoid_: Sound, tone, alarm sound, melody
+
+**Default Ringtone**:
+The Ringtone that stands for the platform's current default alarm sound, whatever it is at the moment the Alarm Triggers. Every new Alarm starts with it.
+_Avoid_: System ringtone, fallback, standard sound
+
+**Preview**:
+A short, one-time playing of a Ringtone from the Ringtone Setting screen so the user can hear it before choosing. Only one Preview plays at a time; it never affects an Alarm.
+_Avoid_: Sample, demo, test play
 
 **Volume**:
 The loudness of the Ringtone when the Alarm Triggers, 0–100%, default 50%.
