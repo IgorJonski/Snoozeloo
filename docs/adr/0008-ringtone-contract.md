@@ -22,17 +22,26 @@ sealed interface RingtoneId {
 fun RingtoneId.encode(): String
 fun String.toRingtoneId(): RingtoneId
 
-data class Ringtone(val id: RingtoneId, val displayName: String)
+/** Amended by docs/specs/ringtone-setting.md (#18): the name is a semantic type the UI maps to string resources, not a display string. */
+sealed interface RingtoneName {
+    data object Silent : RingtoneName
+    /** Android: the title of the tone the system default currently resolves to (null when unreadable). iOS: null. */
+    data class Default(val platformTitle: String?) : RingtoneName
+    /** A media-provider title on Android, a bundled file's display name on iOS; shown as is, never translated. */
+    data class Named(val text: String) : RingtoneName
+}
+
+data class Ringtone(val id: RingtoneId, val name: RingtoneName)   // was displayName: String
 
 interface RingtoneCatalog {
-    /** Ordered: Silent, Default, then the platform entries. */
+    /** Ordered: Silent, Default, then the platform entries. Never fails on the platform read: Silent and Default are always present (amended by #18). */
     suspend fun all(): List<Ringtone>
     /** Null when the id no longer resolves (a deleted custom tone on Android). Never null for Silent or Default. */
     suspend fun find(id: RingtoneId): Ringtone?
 }
 
 interface RingtonePreviewPlayer {
-    /** Plays the Ringtone once at full player gain; a second call stops the previous Preview first. Silent only stops. Stops itself after 30 s. */
+    /** Plays the Ringtone once at full player gain and suspends until the Preview ends: the file's end, the 30-second cap, or stop(); cancelling the call stops the Preview (amended by #18). A second call stops the previous Preview first. Silent only stops and returns at once; so does Default on iOS. */
     suspend fun play(id: RingtoneId)
     fun stop()
 }
@@ -42,8 +51,8 @@ interface RingtonePreviewPlayer {
 
 ### Android (`:component:ringtone:data`, `androidMain`)
 
-- **Catalog**: `RingtoneManager(context).setType(TYPE_ALARM).cursor` (title column 1, URI column 2) — the PDF's "all default Android ringtones". `Default` is the symbolic `RingtoneManager.getDefaultUri(TYPE_ALARM)`, so it follows the system setting; its `displayName` is `"Default (<title of the actual default>)"`, e.g. "Default (Bright Morning)" as in the mockup. `find(Platform(uri))` returns null when `RingtoneManager.getRingtone` cannot resolve the URI.
-- **Preview**: a `Ringtone` with `USAGE_ALARM` + `CONTENT_TYPE_SONIFICATION` attributes, `setVolume(1f)`, `setLooping(false)`, `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`; a 30-second coroutine timer stops it because `Ringtone` has no completion callback.
+- **Catalog**: `RingtoneManager(context).setType(TYPE_ALARM).cursor` (title column 1, URI column 2) — the PDF's "all default Android ringtones". `Default` is the symbolic `RingtoneManager.getDefaultUri(TYPE_ALARM)`, so it follows the system setting; its name is `RingtoneName.Default(platformTitle = <title of getActualDefaultRingtoneUri>)`, which the UI renders as "Default (Bright Morning)" as in the mockup (`platformTitle = null` when the actual default cannot be read). Platform entries are `RingtoneName.Named(title)`. `find(Platform(uri))` returns null when `RingtoneManager.getRingtone` cannot resolve the URI. The cursor read is wrapped: when `RingtoneManager` throws, `all()` returns Silent + Default only and reports the failure once (#18).
+- **Preview**: a `Ringtone` with `USAGE_ALARM` + `CONTENT_TYPE_SONIFICATION` attributes, `setVolume(1f)`, `setLooping(false)`, `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`; `play` polls `Ringtone.isPlaying()` every 250 ms (no completion callback) and returns when it turns false or the 30-second cap fires, stopping the player in a `finally` so cancellation is a stop (#18).
 - **Alarm playback** — a contract that lives in this source set, not in core, because no other platform implements it:
 
 ```kotlin
@@ -59,16 +68,16 @@ interface AlarmSoundPlayer {
 
 ### iOS (`:component:ringtone:data`, `iosMain`)
 
-- **Catalog**: a static list — Silent, Default (`displayName` "Default"; the system does not expose its name), then **Bright Morning**, **Cuckoo Clock** and **Early Twilight** as `Platform("<file>.wav")`. The files are CC0-licensed recordings chosen to match the mockup names (the mockup names are Samsung's tones, whose files cannot be shipped) and live in this module's `iosMain/composeResources/files/sounds/` next to a `LICENSES.md`; they are not shipped in the APK.
+- **Catalog**: a static list — Silent, Default (`RingtoneName.Default(platformTitle = null)`; the system does not expose its name), then **Bright Morning**, **Cuckoo Clock** and **Early Twilight** as `Platform("<file>.wav")` with `RingtoneName.Named` display names. The files are CC0-licensed recordings chosen to match the mockup names (the mockup names are Samsung's tones, whose files cannot be shipped) and live in this module's `iosMain/composeResources/files/sounds/` next to a `LICENSES.md`; they are not shipped in the APK.
 - **Silent** is `silent.wav`: five seconds of −60 dB noise generated by a script committed beside it, because `AlertSound` has no "none" case.
 - **File format**: `.wav`, Linear PCM 16-bit mono, every alarm sound 20–29 s. The iOS alert-sound rules cap files at 30 s, and whether AlarmKit loops a custom file is unconfirmed, so a long file is the safe side either way.
 - **Copy step**: `AlertSound.named` reads only the main bundle root or `Library/Sounds`, while Compose packs resources under `compose-resources/`. On every `startApp` (before the first `sync`, on the calling thread — four files under 2 MB) the component copies each sound to `<container>/Library/Sounds/<file>` when it is missing or its size differs. `AlarmKitAlarmScheduler` maps `Silent → "silent.wav"`, `Default → null` (AlarmKit `.default`), `Platform(file) → file` into `AlarmKitSpec.soundName` (ADR-0007).
-- **Preview**: `AVAudioPlayer(contentsOf: Res.getUri(...))`, `volume = 1`, `numberOfLoops = 0`, session category `.playback` without `.mixWithOthers` (the Ring/Silent switch would mute the default category; music pauses and resumes after `stop`). **Previewing Default plays nothing** on iOS: the system default alert sound is not a file the app can open. The row stays selectable.
+- **Preview**: `AVAudioPlayer(contentsOf: Res.getUri(...))`, `volume = 1`, `numberOfLoops = 0`, `play` resumes from `audioPlayerDidFinishPlaying` or the 30-second cap (#18), session category `.playback` without `.mixWithOthers` (the Ring/Silent switch would mute the default category; music pauses and resumes after `stop`). **Previewing Default plays nothing** on iOS: the system default alert sound is not a file the app can open. The row stays selectable.
 - Volume and Vibrate do not reach the alert (ADR-0001, ADR-0007); `AlarmCapabilities` hides both rows, so `Volume.toGain()` is never used on iOS.
 
 ## Preview rules (both platforms)
 
-One Preview at a time. It stops on: a tap on another row, a tap on Silent, leaving the Ringtone Setting screen (pop or back), the app going to the background, and the 30-second cap. Preview gain is always full — the route stays `RingtoneSetting(ringtoneId: String?)` (ADR-0004); the user sets Volume on the Alarm Settings screen. The screen behaviour itself is #18.
+One Preview at a time. It stops on: a tap on another row, a tap on Silent, leaving the Ringtone Setting screen (pop or back), the app going to the background, and the 30-second cap. Preview gain is always full — the route stays `RingtoneSetting(ringtoneId: String?)` (ADR-0004); the user sets Volume on the Alarm Settings screen. The screen behaviour itself is [`docs/specs/ringtone-setting.md`](../specs/ringtone-setting.md) (#18): it shows an animated indicator on the playing row, which is why `play` suspends until the Preview ends.
 
 ## Considered options
 
@@ -83,6 +92,7 @@ One Preview at a time. It stops on: a tap on another row, a tap on Silent, leavi
 ## Consequences
 
 - #15 stores `RingtoneId.encode()` in a text column; #17 renders the Alarm Settings row from `find(alarm.ringtoneId) ?: default`; #18 owns the Ringtone Setting screen and the Preview stop rules above; #19/ADR-0006 call `AlarmSoundPlayer`.
+- Amended 2026-09-07 by #18: `Ringtone.name` is a `RingtoneName` mapped to `ringtone_ui_*` string resources in `:feature:alarms:presentation` (data modules hold no UI strings); `RingtonePreviewPlayer.play` suspends until the Preview ends and cancellation stops it; `RingtoneCatalog.all()` never fails on the platform read.
 - A new task ticket produces the three CC0 files, `silent.wav`, the generator script and `LICENSES.md`.
 - The hardware-verification list (ADR-0007, #29) gains: a `.wav` near-silent file is accepted as a sound, a custom `.wav` loops or at least plays to its end, and what `.default` sounds like.
 - ADR-0004: `:core:ringtone:domain` holds `RingtoneId`, `Ringtone`, `RingtoneCatalog`, `RingtonePreviewPlayer`; `AlarmSoundPlayer` lives in `androidMain` of `:component:ringtone:data`; bundled sounds sit in that module's `iosMain/composeResources`.
