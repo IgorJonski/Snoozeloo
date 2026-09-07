@@ -25,7 +25,7 @@ The template names `:shared` and `:androidApp` are kept on purpose; `:shared` is
 | `:core:error-reporting:domain` | `ErrorReporter` | — |
 | `:core:usecase:domain` | `UseCase`, `asResult` | `:core:error-reporting:domain` (`api`) |
 | `:core:navigation:domain` | `RootRoute`, `TriggerRoute` | — |
-| `:core:ringtone:domain` | `RingtoneId`, `Ringtone`, the catalog and player contracts (shape: #13) | — |
+| `:core:ringtone:domain` | `RingtoneId`, `Ringtone`, `RingtoneCatalog`, `RingtonePreviewPlayer` (ADR-0008) | — |
 | `:core:alarm:domain` | `Alarm`, `AlarmId` (a `kotlin.uuid.Uuid`, ADR-0007), `AlarmTime`, `RepeatDays`, `Volume`, `AlarmRepository` | `:core:ringtone:domain` (`api`) |
 | `:core:alarm-scheduling:domain` | `Occurrence`, next-Occurrence logic, `AlarmScheduler` (shape: #10; a `TimeZoneProvider` lands here if #10 needs one); `AlarmRinger` (ADR-0006); `AlarmCapabilities` `expect`/`actual` (ADR-0007) | `:core:alarm:domain` (`api`) |
 | `:core:permissions:domain` | the alarm-permissions contract (shape: #22) | — |
@@ -42,7 +42,7 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 | `:component:database:data` | Room database, entities, DAOs (#15) | — |
 | `:component:alarm:data` | `DefaultAlarmRepository` over the DAO | `:core:alarm:domain`, `:component:database:data` |
 | `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `RescheduleReceiver` (ADR-0006; was `BootReceiver`), notification channels, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract, the `AlarmRinger` implementation (ADR-0006). `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls), the `AlarmKitEvents` interface and its implementation, `AlarmKitAlarmScheduler` (maps the domain model onto the bridge), `AlarmKitRinger`, and the `didBecomeActive` observer that runs `syncAll()` (ADR-0007). | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |
-| `:component:ringtone:data` | Android: `RingtoneManager` catalog and player. iOS: bundled catalog and `AVAudioPlayer` (ObjC-callable, no bridge). Bundled sound files live in this module's `composeResources`. | `:core:ringtone:domain` |
+| `:component:ringtone:data` | Android: `RingtoneManager` catalog, preview player and the Android-only `AlarmSoundPlayer` contract with its implementation. iOS: bundled catalog, `AVAudioPlayer` preview (ObjC-callable, no bridge) and the `Library/Sounds` copy step. Bundled sound files live in this module's `iosMain/composeResources` (ADR-0008). | `:core:ringtone:domain` |
 | `:component:permissions:data` | Android: exact-alarm, full-screen-intent and notification checks. iOS: AlarmKit authorization delegated to `AlarmKitBridge`. | `:core:permissions:domain`; on iOS also `:component:alarm-scheduling:data` |
 
 ## Feature
@@ -90,5 +90,5 @@ An included build `build-logic` carries three convention plugins — `snoozeloo.
 
 - `AlarmKitBridge` is the only Swift bridge; anything else AlarmKit-only (authorization included) is added to it rather than to a second bridge.
 - `:shared` must `export` the bridge's module from the framework or Swift sees mangled names.
-- Bundled sounds in `composeResources` land in the app's `compose-resources/` directory on iOS, while AlarmKit reads only the main bundle root or `Library/Sounds`; #13 decides the copy step.
+- Bundled sounds in `composeResources` land in the app's `compose-resources/` directory on iOS, while AlarmKit reads only the main bundle root or `Library/Sounds`; ADR-0008 copies them into `Library/Sounds` on every `startApp`.
 - The `TriggerIntentFactory` indirection exists because the ringing service (a component) may not depend on the Activity (host) that renders a feature.
