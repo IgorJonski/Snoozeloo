@@ -38,7 +38,7 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 | --- | --- | --- |
 | `:component:error-reporting:data` | `LoggingErrorReporter` (Kermit) | `:core:error-reporting:domain` |
 | `:component:ui-lifecycle:presentation` | `ObserveAsEvents`, one-argument `dropUnlessResumed` | — |
-| `:component:design-system:presentation` | theme, colours, Montserrat fonts, icons, shared composables (#14) | — |
+| `:component:design-system:presentation` | `SnoozelooTheme` (one light scheme), Montserrat fonts, Material Symbols `ic_*` vectors, shared composables (ADR-0009) | — |
 | `:component:database:data` | Room database, entities, DAOs (#15) | — |
 | `:component:alarm:data` | `DefaultAlarmRepository` over the DAO | `:core:alarm:domain`, `:component:database:data` |
 | `:component:alarm-scheduling:data` | `commonMain`: `expect` Koin module. `androidMain`: `AndroidAlarmScheduler` (`setAlarmClock`), `AlarmReceiver`, `AlarmRingingService` (`systemExempted` FGS), `RescheduleReceiver` (ADR-0006; was `BootReceiver`), notification channels, library `AndroidManifest.xml`, the `TriggerIntentFactory` contract, the `AlarmRinger` implementation (ADR-0006). `iosMain`: the `AlarmKitBridge` interface (scheduling **and** authorization calls), the `AlarmKitEvents` interface and its implementation, `AlarmKitAlarmScheduler` (maps the domain model onto the bridge), `AlarmKitRinger`, and the `didBecomeActive` observer that runs `syncAll()` (ADR-0007). | `:core:alarm-scheduling:domain`, `:core:alarm:domain` |

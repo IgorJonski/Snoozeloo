@@ -5,8 +5,8 @@ Raw material extracted from the Figma source of truth for the **Extended** varia
 page **UI**, section **Updates ✅** (node `62:6482`), row "Snoozeloo Extended version".
 Extracted 2026-09-06 with the Figma MCP (`get_variable_defs`, `get_design_context`,
 `download_assets`). Every value below is read from the file, not invented; where the
-file is inconsistent the inconsistency is noted rather than resolved. Decisions about
-how these become a Compose theme belong to the design-system ticket, not here.
+file is inconsistent the inconsistency is noted rather than resolved. How these become a Compose theme is decided in
+[`design-system.md`](./design-system.md) (ADR-0009), not here.
 
 Figma frames are **360 × 800** with a 52 px status bar and a 20 px home indicator;
 all px values are Figma px and map 1:1 to dp.
@@ -125,13 +125,15 @@ preferred later.
 Extended list and settings frames; `splash/splash-360x800.png` is the splash frame.
 They are for eyeballing, not pixel diffing.
 
-## Licensing notes for the design-system decision
+## Licensing notes
 
 - Montserrat: OFL 1.1, bundling in the app is fine; keep `OFL.txt` next to the fonts.
-- Hugeicons: the Figma file uses the Hugeicons library. The free set's licence terms
-  (attribution requirements) must be checked before shipping these SVGs in a public
-  build; the design-system ticket should decide whether to keep them, swap for Material
-  Symbols, or draw equivalents.
+- Hugeicons: the glyphs in the Figma file are **Pro** styles (`solid`, `bulk`); only
+  the Stroke Rounded set is free (MIT). The SVGs in `icons/` and `splash/` are therefore
+  a reference archive only and are **never copied into a source set**; the app ships
+  Material Symbols instead. Decided in
+  [ADR-0009](../adr/0009-design-system.md); see
+  [`design-system.md`](./design-system.md) for the glyph-by-glyph mapping.
 
 ## Inconsistencies found in the file
 
