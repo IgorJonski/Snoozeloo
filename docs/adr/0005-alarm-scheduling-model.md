@@ -20,6 +20,9 @@ fun interface TimeZoneProvider { fun current(): TimeZone }   // bound to TimeZon
 /** Pure. Null when the Alarm is Disabled. Picks the Snoozed Occurrence when snoozedUntil is still ahead of now. */
 fun nextOccurrence(alarm: Alarm, now: Instant, zone: TimeZone): Occurrence?
 
+/** Pure; rules 2–4 without an Alarm. nextOccurrence delegates to it; Alarm Settings uses it for the draft countdown (docs/specs/alarm-settings.md). */
+fun nextRegularOccurrence(time: AlarmTime, repeatDays: RepeatDays, now: Instant, zone: TimeZone): Instant
+
 interface AlarmScheduler {
     /** Make the platform reflect this Alarm: Enabled → its next Regular Occurrence (and its Snoozed one, if any) is scheduled; Disabled → nothing is. Idempotent. */
     suspend fun sync(alarm: Alarm)
@@ -72,7 +75,7 @@ It is idempotent, so it is called without checking whether anything drifted: on 
 
 ## Consequences
 
-- `nextOccurrence` is pure and lives in `commonTest` TDD scope: rules 2–5 are its test cases, with `TimeZoneProvider` and `Clock` faked.
+- `nextOccurrence` is pure and lives in `commonTest` TDD scope: rules 2–5 are its test cases, with `TimeZoneProvider` and `Clock` faked. Rules 2–4 are tested on `nextRegularOccurrence`, rule 5 on the wrapper.
 - On iOS every Alarm maps to two AlarmKit ids (main and snooze), derived deterministically from `AlarmId` (a masked `Uuid`, ADR-0007); `syncAll()` must clean both.
 - On Android every Alarm maps to two request codes; `cancel` and `sync` of a Disabled Alarm must clear both.
 - The ringing service (#11) owns the five-minute timeout and the "newer takes over" rule; the Trigger ViewModel (#19) does not need to know which kind of Occurrence woke it.

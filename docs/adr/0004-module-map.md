@@ -24,10 +24,10 @@ The template names `:shared` and `:androidApp` are kept on purpose; `:shared` is
 | --- | --- | --- |
 | `:core:error-reporting:domain` | `ErrorReporter` | — |
 | `:core:usecase:domain` | `UseCase`, `asResult` | `:core:error-reporting:domain` (`api`) |
-| `:core:navigation:domain` | `RootRoute`, `TriggerRoute` | — |
+| `:core:navigation:domain` | `RootRoute`, `TriggerRoute`, `RingtoneSettingResult.KEY` (the back-stack result key Ringtone Setting writes and Alarm Settings reads — `docs/specs/alarm-settings.md`) | — |
 | `:core:ringtone:domain` | `RingtoneId`, `Ringtone`, `RingtoneCatalog`, `RingtonePreviewPlayer` (ADR-0008) | — |
-| `:core:alarm:domain` | `Alarm` (with `snoozedUntil` — ADR-0005 — and `createdAt` — ADR-0010), `AlarmId` (a `kotlin.uuid.Uuid`, ADR-0007), `AlarmTime`, `RepeatDays`, `Volume`, `AlarmRepository` (`observeAll`/`observe`/`getAll`/`get`/`upsert`/`setEnabled`/`setSnoozedUntil`/`delete`, ADR-0010) | `:core:ringtone:domain` (`api`) |
-| `:core:alarm-scheduling:domain` | `Occurrence`, next-Occurrence logic, `AlarmScheduler` (shape: #10; a `TimeZoneProvider` lands here if #10 needs one); `AlarmRinger` (ADR-0006); `AlarmCapabilities` `expect`/`actual` (ADR-0007) | `:core:alarm:domain` (`api`) |
+| `:core:alarm:domain` | `Alarm` (with `snoozedUntil` — ADR-0005 — and `createdAt` — ADR-0010), `AlarmId` (a `kotlin.uuid.Uuid`, ADR-0007), `AlarmTime`, `RepeatDays`, `Volume`, `AlarmDraft` (the six user-edited fields; `docs/specs/alarm-settings.md`), `AlarmRepository` (`observeAll`/`observe`/`getAll`/`get`/`upsert`/`setEnabled`/`setSnoozedUntil`/`delete`, ADR-0010) | `:core:ringtone:domain` (`api`) |
+| `:core:alarm-scheduling:domain` | `Occurrence`, next-Occurrence logic (`nextOccurrence` and the extracted `nextRegularOccurrence(time, repeatDays, now, zone)` — `docs/specs/alarm-settings.md`), `AlarmScheduler` (shape: #10; a `TimeZoneProvider` lands here if #10 needs one); `AlarmRinger` (ADR-0006); `AlarmCapabilities` `expect`/`actual` (ADR-0007) | `:core:alarm:domain` (`api`) |
 | `:core:permissions:domain` | the alarm-permissions contract (shape: #22) | — |
 
 There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, so it is injected directly.
@@ -49,7 +49,7 @@ There is no `:core:clock:domain`: `kotlin.time.Clock` is already an interface, s
 
 | Module | Holds | Depends on |
 | --- | --- | --- |
-| `:feature:alarms:domain` | `ObserveAlarms`, `SaveAlarm`, `DeleteAlarm`, `RestoreAlarm` (undo), `SetAlarmEnabled` | `:core:alarm:domain`, `:core:alarm-scheduling:domain`, `:core:ringtone:domain`, `:core:usecase:domain` |
+| `:feature:alarms:domain` | `ObserveAlarms`, `GetAlarm`, `GetRingtone`, `CreateAlarm`, `UpdateAlarm` (`docs/specs/alarm-settings.md`; was one `SaveAlarm`), `DeleteAlarm`, `RestoreAlarm` (undo), `SetAlarmEnabled` | `:core:alarm:domain`, `:core:alarm-scheduling:domain`, `:core:ringtone:domain`, `:core:usecase:domain` |
 | `:feature:alarms:presentation` | Alarm List, Alarm Settings (with the name dialog), Ringtone Setting, their ViewModels, `alarmsGraph` | `:feature:alarms:domain`, `:core:navigation:domain`, `:core:permissions:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
 | `:feature:trigger:domain` | ~~`TurnOffAlarm`, `SnoozeAlarm`~~ — superseded by ADR-0006: the use cases live in `:component:alarm-scheduling:domain`; this module is never created | — |
 | `:feature:trigger:presentation` | Trigger screen, ViewModel, `triggerGraph` | `:component:alarm-scheduling:domain` (ADR-0006; was `:feature:trigger:domain`), `:core:navigation:domain`, `:component:design-system:presentation`, `:component:ui-lifecycle:presentation` |
@@ -70,7 +70,7 @@ sealed interface TriggerRoute {
 }
 ```
 
-- `alarmsGraph(navController)`: Alarm List → `AlarmSettings(id)` from a card, `AlarmSettings(null)` from the FAB; Alarm Settings → `RingtoneSetting(currentId)`; Ringtone Setting pops and returns `selectedRingtoneId` through `previousBackStackEntry.savedStateHandle`. The name dialog is screen state, not a route.
+- `alarmsGraph(navController)`: Alarm List → `AlarmSettings(id)` from a card, `AlarmSettings(null)` from the FAB; Alarm Settings → `RingtoneSetting(currentId)`; Ringtone Setting pops and returns the encoded id through `previousBackStackEntry.savedStateHandle[RingtoneSettingResult.KEY]` (`"selectedRingtoneId"`), which the Alarm Settings ViewModel observes on its own `SavedStateHandle` (`docs/specs/alarm-settings.md`). The name dialog is screen state, not a route.
 - `triggerGraph(onFinished)`: one destination, no controller; leaving the screen is a callback the host answers (`AlarmTriggerActivity.finish()` on Android; a no-op on iOS, where the overlay follows `AlarmRinger.ringing` — ADR-0007).
 - Two route families because the Trigger never navigates to the list and vice versa; a shared family would only invite a stray `navigate(Trigger)`.
 

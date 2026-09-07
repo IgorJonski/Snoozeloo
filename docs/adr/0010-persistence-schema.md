@@ -75,7 +75,7 @@ interface AlarmRepository {
     /** For syncAll(). */
     suspend fun getAll(): List<Alarm>
     suspend fun get(id: AlarmId): Alarm?
-    /** Whole row: Alarm Settings save (new or existing) and RestoreAlarm. */
+    /** Whole row: CreateAlarm, UpdateAlarm and RestoreAlarm. */
     suspend fun upsert(alarm: Alarm)
     /** Enabled is a scheduling field, so this also clears snoozedUntil, in one statement. */
     suspend fun setEnabled(id: AlarmId, enabled: Boolean)
@@ -85,7 +85,7 @@ interface AlarmRepository {
 }
 ```
 
-`Alarm` gains `createdAt: Instant`, set by `SaveAlarm` from the injected `Clock` when the Alarm is created and carried unchanged afterwards. The repository stores what it is given: ADR-0005 rule 6 (a change to Alarm Time or Repeat Days drops the Snoozed Occurrence) is enforced by `SaveAlarm`, which compares the stored Alarm with the edited one and nulls `snoozedUntil` before `upsert`. `DefaultAlarmRepository(dao: AlarmDao)` in `:component:alarm:data` maps and delegates; it has no data-source layer because Room is the only source.
+`Alarm` gains `createdAt: Instant`, set by `CreateAlarm` from the injected `Clock` when the Alarm is created and carried unchanged afterwards. The repository stores what it is given: ADR-0005 rule 6 (a change to Alarm Time or Repeat Days drops the Snoozed Occurrence) is enforced by `UpdateAlarm`, which reads the stored Alarm, compares it with the `AlarmDraft` and nulls `snoozedUntil` before `upsert`; both use cases save the Alarm as Enabled. (`CreateAlarm` + `UpdateAlarm` replace the single `SaveAlarm` first named here — `docs/specs/alarm-settings.md`.) `DefaultAlarmRepository(dao: AlarmDao)` in `:component:alarm:data` maps and delegates; it has no data-source layer because Room is the only source.
 
 **Undo-delete**: `DeleteAlarm` runs `scheduler.cancel(id)` and `repository.delete(id)`; the list ViewModel keeps the deleted `Alarm` in memory for the undo window; `RestoreAlarm` runs `repository.upsert(alarm.copy(snoozedUntil = null))` — same `id`, same `createdAt` — and `scheduler.sync`. If the process dies inside the undo window the Alarm is gone; the window is a few seconds and the trade is accepted. The window's length and what the snackbar looks like are #16.
 
